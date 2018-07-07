@@ -1,0 +1,41 @@
+service: sls-sqs-test
+
+custom:
+  settings:
+    ACCOUNT_ID: "YOUR_AWS_ACCOUNTID"
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: eu-west-1
+  environment: ${self:custom.settings}
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "sqs:SendMessage"
+      Resource: "arn:aws:sqs:${self:provider.region}:*:MyQueue"
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          method: get
+          path: hello
+  sqsHello:
+    handler: handler.sqsHello
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - MyQueue
+              - Arn
+          batchSize: 1
+
+resources:
+  Resources:
+    MyQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "MyQueue"
